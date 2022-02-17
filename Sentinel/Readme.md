@@ -1,38 +1,20 @@
-# Azure Sentinel Configuration Backup
+# Azure Sentinel
 
-This Logic App allows you to export the Azure Sentinel configuration. Every operation group are exported via API REST to a JSON file, with all configuration parameters.
+These Logic Apps allow you to connect to Azure Sentinel to get or import data, unattended and automatically.
 
-These JSON files are stored in a Storage Account, by date.
+For each JSON declared by the Logic App I have created a text explaining the purpose and extra parameterisation for each case.
 
-[SentinelConfigBackup.json](SentinelConfigBackup.json)
+My intention is to keep growing this list.
 
+## Index
 
-## API Version
-
-The Sentinal service has changed over time. There are new and changed operations groups.
-
-This Logic App is based on [API version](https://docs.microsoft.com/en-us/rest/api/securityinsights/api-versions) 2021-09-01-preview
-
-## Permissions
-
-It's convenient to configure a Service Principal in Azure AD to make calls to the Azure API REST. instead of a user. This Enterprise Application must have 'user_impersonation' permissions and the necessary IAM permission per RBAC on each subscription or resource group where you where it will run.
-
-Only Reader role are needed on Sentinel Subscription.
+- [SentinelConfigBackup.json](SentinelConfigBackup.json)
+	- Azure Sentinel configuration backup to individual JSON files
+- [UserAccessAdministratorAAD.json](UserAccessAdministratorAAD.json)
+	- Send Activity Logs events for User Access Administration elevations to Sentinel
 
 
-## Customise parameters
 
-This following values should be customised in the Logic App json file, with your personal data about the Service Principal to make calls to the API and values of Sentinel subscription.
 
-```
-_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_
-_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_
-_LOG_ANALYTICS_WORKSPACE_SENTINEL_NAME_
-_SERVICE_PRINCIPAL_TENANT_ID_
-_SERVICE_PRINCIPAL_CLIENT_ID_
-_SERVICE_PRINCIPAL_CLIENT_SECRET_ID_
-```
 
-Also, the Storage Account Resource ID, and particularly the resource location, should be checked:
-
-`"/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/providers/Microsoft.Web/locations/westeurope/managedApis/azureblob"`
+Greetings.
