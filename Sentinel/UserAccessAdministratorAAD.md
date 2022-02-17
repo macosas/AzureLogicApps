@@ -7,6 +7,7 @@ The Logic App have an automatic recurrence every hour to read the Azure Activity
 [UserAccessAdministratorAAD.json](UserAccessAdministratorAAD.json)
 
 AAD elevations
+
 ![](images/aad-properties-global-admin-setting.png)
 
 

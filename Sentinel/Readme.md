@@ -8,9 +8,9 @@ My intention is to keep growing this list.
 
 ## Index
 
-- [SentinelConfigBackup.json](SentinelConfigBackup.json)
+- [Sentinel Config Backup](SentinelConfigBackup.md)
 	- Azure Sentinel configuration backup to individual JSON files
-- [UserAccessAdministratorAAD.json](UserAccessAdministratorAAD.json)
+- [User Access Administrator elevtaions AAD](UserAccessAdministratorAAD.md)
 	- Send Activity Logs events for User Access Administration elevations to Sentinel
 
 
