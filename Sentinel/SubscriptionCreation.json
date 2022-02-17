@@ -1,0 +1,97 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "Send_Data": {
+                        "inputs": {
+                            "body": "@{items('For_each')}",
+                            "headers": {
+                                "Log-Type": "SubscriptionInventory_CL"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azureloganalyticsdatacollector']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/api/logs"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "foreach": "@body('List_subscriptions')?['value']",
+                "runAfter": {
+                    "List_subscriptions": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "List_subscriptions": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['arm']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/subscriptions",
+                    "queries": {
+                        "x-ms-api-version": "2016-06-01"
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Recurrence": {
+                "evaluatedRecurrence": {
+                    "frequency": "Hour",
+                    "interval": 1
+                },
+                "recurrence": {
+                    "frequency": "Day",
+                    "interval": 1,
+                    "schedule": {
+                        "hours": [
+                            "13"
+                        ],
+                        "minutes": [
+                            0
+                        ]
+                    },
+                    "timeZone": "Romance Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "arm": {
+                    "connectionId": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/resourceGroups/_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_/providers/Microsoft.Web/connections/arm",
+                    "connectionName": "arm",
+                    "id": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/providers/Microsoft.Web/locations/westeurope/managedApis/arm"
+                },
+                "azureloganalyticsdatacollector": {
+                    "connectionId": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/resourceGroups/_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_/providers/Microsoft.Web/connections/azureloganalyticsdatacollector",
+                    "connectionName": "azureloganalyticsdatacollector",
+                    "id": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/providers/Microsoft.Web/locations/westeurope/managedApis/azureloganalyticsdatacollector"
+                }
+            }
+        }
+    }
+}
