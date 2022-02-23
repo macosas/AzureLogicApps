@@ -1,0 +1,383 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Send_an_email_(V2)": {
+                        "inputs": {
+                            "body": {
+                                "Body": "<p>@{variables('varListado')}<br>\n</p>",
+                                "Subject": "Newly Azure Resources craeted",
+                                "To": "_EMAIL_ACCOUNTS_SEPARATED_BY_SEMICOLON_"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['_OFFICE365_CONNNECTION_NAME_']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/v2/Mail"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "not": {
+                                "equals": [
+                                    "@length(body('Run_query_and_list_results')?['value'])",
+                                    0
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each": {
+                "actions": {
+                    "Append_to_string_variable": {
+                        "inputs": {
+                            "name": "varListado",
+                            "value": "Caller: @{items('For_each')?['Caller']}<br />\nOperationName: @{items('For_each')?['OperationName']}<br />\nOperationNameValue: @{items('For_each')?['OperationNameValue']}<br />\nResourceProvider: @{items('For_each')?['ResourceProvider']}<br />\nResource: @{items('For_each')?['Resource']}<br />\nActivityStatus: @{items('For_each')?['ActivityStatus']}<br />\nSubscriptionId: @{body('ParseSubscriptionName')?['data']?['rows']}<br />\nResourceGroup: @{items('For_each')?['ResourceGroup']}<br />\nTimeGenerated: @{items('For_each')?['TimeGenerated']}<br /><br /><br />"
+                        },
+                        "runAfter": {
+                            "ParseSubscriptionName": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "AppendToStringVariable"
+                    },
+                    "HTTPSubscriptionName": {
+                        "inputs": {
+                            "body": {
+                                "query": "ResourceContainers | where type=='microsoft.resources/subscriptions' | where subscriptionId == '@{items('For_each')?['SubscriptionId']}' | project name"
+                            },
+                            "headers": {
+                                "Authorization": "Bearer @{body('ParseToken')?['access_token']}",
+                                "Content-Type": "application/json"
+                            },
+                            "method": "POST",
+                            "uri": "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2020-04-01-preview"
+                        },
+                        "runAfter": {},
+                        "type": "Http"
+                    },
+                    "ParseSubscriptionName": {
+                        "inputs": {
+                            "content": "@body('HTTPSubscriptionName')",
+                            "schema": {
+                                "properties": {
+                                    "count": {
+                                        "type": "integer"
+                                    },
+                                    "data": {
+                                        "properties": {
+                                            "columns": {
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "type": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "type"
+                                                    ],
+                                                    "type": "object"
+                                                },
+                                                "type": "array"
+                                            },
+                                            "rows": {
+                                                "items": {
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": "array"
+                                                },
+                                                "type": "array"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "facets": {
+                                        "type": "array"
+                                    },
+                                    "resultTruncated": {
+                                        "type": "string"
+                                    },
+                                    "totalRecords": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "HTTPSubscriptionName": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    }
+                },
+                "foreach": "@body('Parse_JSON')?['value']",
+                "runAfter": {
+                    "Parse_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "HTTPgetToken": {
+                "inputs": {
+                    "body": "client_id=@{variables('clientID')}&scope=https://management.azure.com/.default&client_secret=@{variables('clientSecretID')}&grant_type=client_credentials",
+                    "headers": {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    "method": "POST",
+                    "uri": "https://login.microsoftonline.com/@{variables('tenantID')}/oauth2/v2.0/token"
+                },
+                "runAfter": {
+                    "var-clientSecretID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varListado",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "ParseToken": {
+                "inputs": {
+                    "content": "@body('HTTPgetToken')",
+                    "schema": {
+                        "properties": {
+                            "access_token": {
+                                "type": "string"
+                            },
+                            "expires_in": {
+                                "type": "integer"
+                            },
+                            "ext_expires_in": {
+                                "type": "integer"
+                            },
+                            "token_type": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "HTTPgetToken": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@body('Run_query_and_list_results')",
+                    "schema": {
+                        "properties": {
+                            "value": {
+                                "items": {
+                                    "properties": {
+                                        "ActivityStatus": {
+                                            "type": "string"
+                                        },
+                                        "Caller": {
+                                            "type": "string"
+                                        },
+                                        "OperationName": {
+                                            "type": "string"
+                                        },
+                                        "OperationNameValue": {
+                                            "type": "string"
+                                        },
+                                        "Resource": {
+                                            "type": "string"
+                                        },
+                                        "ResourceGroup": {
+                                            "type": "string"
+                                        },
+                                        "ResourceProvider": {
+                                            "type": "string"
+                                        },
+                                        "SubscriptionId": {
+                                            "type": "string"
+                                        },
+                                        "TimeGenerated": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "Caller",
+                                        "OperationName",
+                                        "OperationNameValue",
+                                        "ResourceProvider",
+                                        "Resource",
+                                        "ActivityStatus",
+                                        "SubscriptionId",
+                                        "ResourceGroup",
+                                        "TimeGenerated"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Run_query_and_list_results": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Run_query_and_list_results": {
+                "inputs": {
+                    "body": "AzureActivity\n| where TimeGenerated >= ago(1d)\n| where Caller has \"@sanitas.es\" and OperationName has \"Create or update\"\n| where ActivityStatus == \"Succeeded\"\n| where ResourceProvider != \"Microsoft.Network\"\n| where OperationName !in~ (\"Create or update resource diagnostic setting\", \"Create or Update any Pipeline.\", \"Create or Update Dataset\", \"Create or Update any Linked Service.\", \"Create or Update Trigger\", \"Create or update workbook\", \"Create or Update Disk\", \"Create or Update Snapshot\", \"Create or Update Image\", \"Create or Update ConsumerGroup\", \"Create or Update EventHub Authorization Rule\", \"Create Or Update Namespace \", \"Create or Update Namespace Authorization Rules\", \"Create or update activity log alert\", \"Create or update metric alert\", \"Create or update action group\", \"Create or Update security alert suppression rule\", \"Create or Update Spark pools.\", \"Create or update data collection rule association\", \"Create or update data collection rule\")\n| project Caller, OperationName, OperationNameValue, ResourceProvider, Resource, ActivityStatus, SubscriptionId, ResourceGroup, TimeGenerated",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['_MONITOR_CONNECTION_NAME_']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/queryData",
+                    "queries": {
+                        "resourcegroups": "_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_",
+                        "resourcename": "_LOG_ANALYTICS_WORKSPACE_SENTINEL_NAME_",
+                        "resourcetype": "Log Analytics Workspace",
+                        "subscriptions": "_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_",
+                        "timerange": "Set in query"
+                    }
+                },
+                "runAfter": {
+                    "ParseToken": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "var-clientID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "clientID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_CLIENT_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "var-tenantID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "var-clientSecretID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "clientSecretID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_CLIENT_SECRET_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "var-clientID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "var-tenantID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "tenantID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_TENANT_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Recurrence": {
+                "evaluatedRecurrence": {
+                    "frequency": "Month",
+                    "interval": 12,
+                    "timeZone": "Romance Standard Time"
+                },
+                "recurrence": {
+                    "frequency": "Day",
+                    "interval": 1,
+                    "schedule": {
+                        "hours": [
+                            "13"
+                        ]
+                    },
+                    "timeZone": "Romance Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "_MONITOR_CONNECTION_NAME_": {
+                    "connectionId": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/resourceGroups/_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_/providers/Microsoft.Web/connections/azuremonitorlogs",
+                    "connectionName": "azuremonitorlogs",
+                    "id": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/providers/Microsoft.Web/locations/westeurope/managedApis/azuremonitorlogs"
+                },
+                "_OFFICE365_CONNNECTION_NAME_": {
+                    "connectionId": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/resourceGroups/_LOG_ANALYTICS_WORKSPACE_SENTINEL_RESOURCE_GROUP_NAME_/providers/Microsoft.Web/connections/office365-2",
+                    "connectionName": "office365-2",
+                    "id": "/subscriptions/_LOG_ANALYTICS_WORKSPACE_SENTINEL_SUBSCRIPTION_ID_/providers/Microsoft.Web/locations/westeurope/managedApis/office365"
+                }
+            }
+        }
+    }
+}

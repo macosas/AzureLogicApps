@@ -11,7 +11,7 @@ The event will send to a Custom Log table on Log Analytics Workspace of Sentinel
 
 ## Permissions
 
-It's convenient to configure a Service Principal in Azure AD to make calls to the Azure API REST. instead of a user. This Enterprise Application must have 'user_impersonation' permissions. The Service Principal need Reader role RBAC on every Subscription.
+It's convenient to configure a Service Principal in Azure AD to make calls to the Azure API REST, instead of a user. This Enterprise Application must have 'user_impersonation' permissions. The Service Principal need Reader role RBAC on every Subscription.
 
 You need the Service Principal tenant ID, client ID and client secret ID data to configure the Azure Resource Manager connector.
 

@@ -15,7 +15,7 @@ This Logic App is based on [API version](https://docs.microsoft.com/en-us/rest/a
 
 ## Permissions
 
-It's convenient to configure a Service Principal in Azure AD to make calls to the Azure API REST. instead of a user. This Enterprise Application must have 'user_impersonation' permissions and the necessary IAM permission per RBAC on each subscription or resource group where you where it will run.
+It's convenient to configure a Service Principal in Azure AD to make calls to the Azure API REST, instead of a user. This Enterprise Application must have 'user_impersonation' permissions and the necessary IAM permission per RBAC on each subscription or resource group where you where it will run.
 
 Only Reader role are needed on Sentinel Subscription.
 

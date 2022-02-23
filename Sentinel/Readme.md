@@ -13,7 +13,9 @@ My intention is to keep growing this list.
 - [User Access Administrator elevtaions AAD](UserAccessAdministratorAAD.md)
 	- Send Activity Logs events for User Access Administration elevations to Sentinel
 - [Monitoring for Azure Subscription Creation](SubscriptionCreation.md)
-	- Allow monitoring for the creation of Azure Subscriptions. Send the event to Sentinel and email advise
+	- Allow monitoring for the creation of Azure subscriptions. Send the event to Sentinel and email advise
+- [Newly Azure Resources created](NewAzResourcesCreated.md)
+	- List of resources crated on your Azure subscriptions
 
 
 
