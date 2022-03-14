@@ -1,0 +1,305 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Compose": {
+                "inputs": "@json(concat('[',variables('varListaIPsActuales'),']'))",
+                "runAfter": {
+                    "ForeachIP": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose"
+            },
+            "ForeachIP": {
+                "actions": {
+                    "AddListaIPsActuales": {
+                        "inputs": {
+                            "name": "varListaIPsActuales",
+                            "value": ",{\"@@odata.type\":\"#microsoft.graph.iPv4CidrRange\",\"cidrAddress\":\"@{items('ForeachIP')?['cidrAddress']}\"}"
+                        },
+                        "runAfter": {},
+                        "type": "AppendToStringVariable"
+                    }
+                },
+                "foreach": "@body('ParseSacarListaIPsActuales')?['ipRanges']",
+                "runAfter": {
+                    "initListaIPsActuales": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "repetitions": 1
+                    }
+                },
+                "type": "Foreach"
+            },
+            "GetAllNamedLocations_2Del": {
+                "inputs": {
+                    "headers": {
+                        "Authorization": "Bearer @{body('ParseToken')?['access_token']}"
+                    },
+                    "method": "GET",
+                    "uri": "https://graph.microsoft.com/beta/identity/conditionalAccess/namedLocations/"
+                },
+                "runAfter": {
+                    "ParseToken": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "HTTP": {
+                "inputs": {
+                    "body": {
+                        "@@odata.type": "#microsoft.graph.ipNamedLocation",
+                        "displayName": "BlockIPsOnAlerts",
+                        "ipRanges": "@outputs('Compose')",
+                        "isTrusted": false
+                    },
+                    "headers": {
+                        "Authorization": "Bearer @{body('ParseToken')?['access_token']}",
+                        "Content-Type": "application/json"
+                    },
+                    "method": "PATCH",
+                    "uri": "https://graph.microsoft.com/beta/identity/conditionalAccess/namedLocations/_NAMED_LOCATION_ID_"
+                },
+                "runAfter": {
+                    "Compose": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "HTTPgetIPfromNamedLocation": {
+                "inputs": {
+                    "headers": {
+                        "Authorization": "Bearer @{body('ParseToken')?['access_token']}",
+                        "Content-Type": "application/json"
+                    },
+                    "method": "GET",
+                    "uri": "https://graph.microsoft.com/beta/identity/conditionalAccess/namedLocations/_NAMED_LOCATION_ID_"
+                },
+                "runAfter": {
+                    "GetAllNamedLocations_2Del": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "HTTPgetToken": {
+                "inputs": {
+                    "body": "client_id=@{variables('clientID')}&scope=https://graph.microsoft.com/.default&client_secret=@{variables('clientSecretID')}&grant_type=client_credentials",
+                    "headers": {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    "method": "POST",
+                    "uri": "https://login.microsoftonline.com/@{variables('tenantID')}/oauth2/v2.0/token"
+                },
+                "runAfter": {
+                    "var-clientSecretID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "IPtoBlock": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varIP",
+                            "type": "string",
+                            "value": "_NEW_IP_AND_SUBNET_MASK_"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "ParseSacarListaIPsActuales": {
+                "inputs": {
+                    "content": "@body('HTTPgetIPfromNamedLocation')",
+                    "schema": {
+                        "properties": {
+                            "@@odata.context": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "items": {
+                                    "properties": {
+                                        "@@odata.type": {
+                                            "type": "string"
+                                        },
+                                        "createdDateTime": {},
+                                        "displayName": {
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "ipRanges": {
+                                            "items": {
+                                                "properties": {
+                                                    "@@odata.type": {
+                                                        "type": "string"
+                                                    },
+                                                    "cidrAddress": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "@@odata.type",
+                                                    "cidrAddress"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "isTrusted": {
+                                            "type": "boolean"
+                                        },
+                                        "modifiedDateTime": {}
+                                    },
+                                    "required": [
+                                        "@@odata.type",
+                                        "id",
+                                        "displayName",
+                                        "modifiedDateTime",
+                                        "createdDateTime",
+                                        "isTrusted",
+                                        "ipRanges"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "HTTPgetIPfromNamedLocation": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "ParseToken": {
+                "inputs": {
+                    "content": "@body('HTTPgetToken')",
+                    "schema": {
+                        "properties": {
+                            "access_token": {
+                                "type": "string"
+                            },
+                            "expires_in": {
+                                "type": "integer"
+                            },
+                            "ext_expires_in": {
+                                "type": "integer"
+                            },
+                            "token_type": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "HTTPgetToken": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "initListaIPsActuales": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "varListaIPsActuales",
+                            "type": "string",
+                            "value": "{\"@@odata.type\":\"#microsoft.graph.iPv4CidrRange\",\"cidrAddress\":\"@{variables('varIP')}\"}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "ParseSacarListaIPsActuales": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "var-clientID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "clientID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_CLIENT_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "var-tenantID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "var-clientSecretID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "clientSecretID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_CLIENT_SECRET_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "var-clientID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "var-tenantID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "tenantID",
+                            "type": "string",
+                            "value": "_SERVICE_PRINCIPAL_TENANT_ID_"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "IPtoBlock": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {},
+        "triggers": {
+            "Recurrence": {
+                "evaluatedRecurrence": {
+                    "frequency": "Month",
+                    "interval": 14,
+                    "timeZone": "Romance Standard Time"
+                },
+                "recurrence": {
+                    "frequency": "Month",
+                    "interval": 14,
+                    "timeZone": "Romance Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {}
+}
