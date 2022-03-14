@@ -1,4 +1,4 @@
-# Newly Azure Resources created
+# Block IPs on Conditional Access
 
 This Logic App allows you to add a new IP to Block List in a Named Location of the Azure Conditional Access. This app use Update method of Graph Api Rest to refresh the list entirely, reading the actual ip's configure it and adding the new one 'IPtoBlock' variable.
 
