@@ -10,7 +10,7 @@ My intention is to keep growing this list.
 
 - [Sentinel Config Backup](SentinelConfigBackup.md)
 	- Azure Sentinel configuration backup to individual JSON files
-- [User Access Administrator elevtaions AAD](UserAccessAdministratorAAD.md)
+- [User Access Administrator elevations AAD](UserAccessAdministratorAAD.md)
 	- Send Activity Logs events for User Access Administration elevations to Sentinel
 - [Monitoring for Azure Subscription Creation](SubscriptionCreation.md)
 	- Allow monitoring for the creation of Azure subscriptions. Send the event to Sentinel and email advise
